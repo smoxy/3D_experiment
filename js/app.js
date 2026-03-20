@@ -110,7 +110,7 @@ try {
   const particles = [];
   let PARTICLE_COUNT = 80; // start value, tuned for performance
   const PARTICLE_RADIUS = 0.06;
-  let PARTICLE_SPEED = 6.5; // increased for visible movement
+  let PARTICLE_SPEED = 20; // PHASE 1 FIX: increased from 6.5 to 20 for visible movement (±10 u/s)
   let PARTICLE_RESTITUTION = 0.9; // elastic coefficient
   const FLOOR_Y = -1.0; // approximate floor plane for collision
 
@@ -119,8 +119,8 @@ try {
       new THREE.SphereGeometry(PARTICLE_RADIUS, 18, 14),
       new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.6, 0.5), roughness: 0.4, metalness: 0.1 })
     );
-    // random spawn box around origin
-    mesh.position.set((Math.random() - 0.5) * 4, Math.random() * 2 + 0.2, (Math.random() - 0.5) * 4);
+    // PHASE 1 FIX: spawn zone lontana da cube (±5 X/Z instead ±2, Y 1-4 instead 0.2-2.2)
+    mesh.position.set((Math.random() - 0.5) * 10, Math.random() * 3 + 1, (Math.random() - 0.5) * 10);
     const vel = new THREE.Vector3((Math.random() - 0.5) * PARTICLE_SPEED, (Math.random() - 0.5) * PARTICLE_SPEED, (Math.random() - 0.5) * PARTICLE_SPEED);
     const mass = 0.8 + Math.random() * 0.8;
     scene.add(mesh);
@@ -247,6 +247,11 @@ try {
     if (particlesEnabled && particles.length) {
       // integrate positions
       const dt = Math.min(particleClock.getDelta(), 0.033);
+      // PHASE 1 FIX: debug log dt and sample velocity
+      if (particles.length > 0) {
+        const sampleVel = particles[0].vel.length();
+        console.debug(`[Particles] dt=${dt.toFixed(4)}, vel_mag=${sampleVel.toFixed(2)}, count=${particles.length}`);
+      }
       // gravity
       const gravity = -9.8;
       for (let i = 0; i < particles.length; i++) {
@@ -424,9 +429,11 @@ try {
     if (particlesEnabled) {
       // spawn particles if none
       if (particles.length === 0) spawnParticles(PARTICLE_COUNT);
-      particleClock.start(); // START THE CLOCK!
+      // PHASE 1 FIX: reset clock properly (stop then start)
+      particleClock.stop();
+      particleClock.start();
       toggleParticlesBtn.textContent = 'Particelle OFF';
-      debug('Particelle attivate');
+      debug('Particelle attivate (PHASE 1: vel x3, spawn zone x2.5)');
     } else {
       particleClock.stop();
       clearParticles();
