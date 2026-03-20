@@ -33,6 +33,35 @@ export class SceneSetup {
     const grid = new THREE.GridHelper(16, 32, 0x4a7cff, 0x1a2f51);
     grid.position.y = -1;
     this.scene.add(grid);
+
+    this.initBoundaryBox();
+  }
+
+  /**
+   * Renders a semi-transparent wireframe box that matches the Rapier boundary walls.
+   * boundaryHalfExtent = 8, floorY = -1.0, ceilingY = 10
+   * Box dimensions: 16 × 11 × 16 (W × H × D), centred at (0, 4.5, 0)
+   */
+  initBoundaryBox() {
+    const e   = 8;   // half-extent X/Z (must match RapierWorld.boundaryHalfExtent)
+    const top = 10;  // ceiling Y        (must match RapierWorld.boundaryTopY)
+    const floorY = -1.0;
+    const width  = e * 2;
+    const height = top - floorY;
+    const midY   = floorY + height / 2;
+
+    // Wireframe edges only — subtle so it doesn't dominate visual
+    const boxGeo   = new THREE.BoxGeometry(width, height, width);
+    const edgesGeo = new THREE.EdgesGeometry(boxGeo);
+    const edgesMat = new THREE.LineBasicMaterial({
+      color: 0x2a5080,
+      transparent: true,
+      opacity: 0.45,
+    });
+    const wireframe = new THREE.LineSegments(edgesGeo, edgesMat);
+    wireframe.position.set(0, midY, 0);
+    this.scene.add(wireframe);
+    boxGeo.dispose();
   }
 
   getScene() {

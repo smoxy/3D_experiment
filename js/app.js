@@ -1,19 +1,66 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155/build/three.module.js';
 import { SceneSetup } from './modules/Scene.js';
 import { Cube } from './modules/Cube.js';
-import { ParticleSystem } from './modules/ParticleSystem.js';
+import { ParticleSystem, setParticleSystemLogger } from './modules/ParticleSystem.js';
 import { CameraControlsSetup } from './modules/CameraControls.js';
 import { RapierWorld } from './modules/physics/RapierWorld.js';
 
 const debugEl = document.querySelector('#debug');
 const canvas = document.querySelector('#scene');
 
-function debug(msg) {
-  if (debugEl) {
-    debugEl.textContent = msg;
-  } else {
-    console.info('[DEBUG]', msg);
+/**
+ * Simple logger: prints to console with timestamp + prefix, appends to debug element.
+ */
+class Logger {
+  constructor(maxLines = 20) {
+    this.maxLines = maxLines;
+    this.lines = [];
+    this.startTime = Date.now();
   }
+
+  log(level, prefix, msg) {
+    const elapsed = ((Date.now() - this.startTime) / 1000).toFixed(2);
+    const fullMsg = `[${elapsed}s] [${prefix}] ${msg}`;
+    
+    // Console output with styling
+    const consoleStyle = this._getConsoleStyle(level);
+    if (consoleStyle) {
+      console.log(`%c${fullMsg}`, consoleStyle);
+    } else {
+      console.log(fullMsg);
+    }
+
+    // Debug element: append to history (max lines)
+    this.lines.push(fullMsg);
+    if (this.lines.length > this.maxLines) this.lines.shift();
+    if (debugEl) {
+      debugEl.textContent = this.lines.join('\n');
+      debugEl.scrollTop = debugEl.scrollHeight;
+    }
+  }
+
+  _getConsoleStyle(level) {
+    switch (level) {
+      case 'info': return 'color: #4a9eff; font-weight: bold;';
+      case 'warn': return 'color: #ffb74d; font-weight: bold;';
+      case 'error': return 'color: #ff6b6b; font-weight: bold;';
+      case 'success': return 'color: #51cf66; font-weight: bold;';
+      case 'debug': return 'color: #888; font-size: 0.9em;';
+      default: return '';
+    }
+  }
+
+  info(prefix, msg) { this.log('info', prefix, msg); }
+  warn(prefix, msg) { this.log('warn', prefix, msg); }
+  error(prefix, msg) { this.log('error', prefix, msg); }
+  success(prefix, msg) { this.log('success', prefix, msg); }
+  debug(prefix, msg) { this.log('debug', prefix, msg); }
+}
+
+const logger = new Logger();
+
+function debug(msg) {
+  logger.info('APP', msg);
 }
 
 function isWebGLAvailable() {
@@ -50,9 +97,13 @@ try {
   
   const cube = new Cube(scene);
   const rapierWorld = new RapierWorld();
-  debug('Caricamento motore fisico...');
+  logger.info('APP', 'Caricamento motore fisico Rapier.js...');
   await rapierWorld.init(9.8);
+  logger.success('RAPIER', 'Physics world initialized (gravity 9.8 m/s²)');
+  
   const particles = new ParticleSystem(scene, cube, rapierWorld);
+  setParticleSystemLogger(logger);
+  logger.success('APP', 'ParticleSystem initialized');
   
   // Camera
   const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
