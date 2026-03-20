@@ -35,7 +35,8 @@ export class RapierWorld {
   /** Creates a fixed cuboid collider centred at (cx, cy, cz) with half-extents (hx, hy, hz). */
   _addStaticCuboid(cx, cy, cz, hx, hy, hz) {
     const bodyDesc = RAPIER.RigidBodyDesc.fixed();
-    bodyDesc.setTranslation({ x: cx, y: cy, z: cz });
+    // setTranslation requires 3 scalar numbers in the compat build (not a single object)
+    bodyDesc.setTranslation(cx, cy, cz);
     const body = this.world.createRigidBody(bodyDesc);
     this.world.createCollider(RAPIER.ColliderDesc.cuboid(hx, hy, hz), body);
   }
@@ -72,9 +73,8 @@ export class RapierWorld {
    */
   createParticleBody(position, velocity, radius, restitution) {
     const bodyDesc = RAPIER.RigidBodyDesc.dynamic()
-      // Single-object form: required by Rapier ≥ 0.12 (replaces positional x,y,z args)
-      .setTranslation({ x: position.x, y: position.y, z: position.z })
-      .setLinvel({ x: velocity.x, y: velocity.y, z: velocity.z })
+      .setTranslation(position.x, position.y, position.z)
+      .setLinvel(velocity.x, velocity.y, velocity.z)
       .setAngularDamping(0.5);
     const body = this.world.createRigidBody(bodyDesc);
     const collider = this.world.createCollider(

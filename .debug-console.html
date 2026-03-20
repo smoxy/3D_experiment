@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saluti 3D - Debug Console</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Courier New', monospace;
+      background: #0a0e27;
+      color: #e0e0e0;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #4a9eff;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #4a9eff;
+      padding-bottom: 10px;
+    }
+
+    h2 {
+      color: #51cf66;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      font-size: 1.2em;
+    }
+
+    .section {
+      background: #1a1f3a;
+      padding: 20px;
+      margin: 20px 0;
+      border-left: 4px solid #4a9eff;
+      border-radius: 4px;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    button {
+      background: #4a9eff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background: #2a7eff;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(74, 158, 255, 0.3);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button.success {
+      background: #51cf66;
+    }
+
+    button.success:hover {
+      background: #31af46;
+    }
+
+    button.danger {
+      background: #ff6b6b;
+    }
+
+    button.danger:hover {
+      background: #db3434;
+    }
+
+    .console {
+      background: #000;
+      border: 1px solid #4a9eff;
+      padding: 15px;
+      border-radius: 4px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-size: 0.8em;
+      line-height: 1.4;
+      color: #0f0;
+    }
+
+    .console-line {
+      margin: 4px 0;
+    }
+
+    .log { color: #4a9eff; }
+    .warn { color: #ffb74d; }
+    .error { color: #ff6b6b; }
+    .success { color: #51cf66; }
+    .debug { color: #888; }
+
+    .info-box {
+      background: #2a3f5f;
+      border: 1px solid #5a6f8f;
+      padding: 15px;
+      border-radius: 4px;
+      margin: 10px 0;
+      font-size: 0.9em;
+    }
+
+    .code {
+      background: #000;
+      padding: 10px;
+      border-radius: 3px;
+      border-left: 3px solid #4a9eff;
+      margin: 5px 0;
+      overflow-x: auto;
+    }
+
+    a {
+      color: #4a9eff;
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0;
+    }
+
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #5a6f8f;
+    }
+
+    th {
+      background: #2a3f5f;
+      color: #4a9eff;
+      font-weight: bold;
+    }
+
+    .status-ok { color: #51cf66; }
+    .status-fail { color: #ff6b6b; }
+
+    footer {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #5a6f8f;
+      text-align: center;
+      font-size: 0.8em;
+      color: #888;
+    }
+  </style>
+</head>
+<body>
+  <h1>Saluti 3D - Debug Console</h1>
+
+  <div class="section">
+    <h2>Quick Links</h2>
+    <div class="button-group">
+      <a href="http://localhost:8000/?debug=1"><button>Open App (Debug Mode)</button></a>
+      <a href="http://localhost:8000/"><button>Open App (Normal)</button></a>
+      <a href="javascript:void(0)" onclick="toggleDebugMode()"><button class="success">Toggle Debug Mode</button></a>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Automated Tests</h2>
+    <p>Run comprehensive tests to validate the application state.</p>
+    <div class="button-group">
+      <button class="success" onclick="runTests()">Run All Tests</button>
+      <button onclick="clearConsole()">Clear Console</button>
+    </div>
+    <div id="test-results" style="margin-top: 15px;"></div>
+  </div>
+
+  <div class="section">
+    <h2>Debug Information</h2>
+    <div id="debug-info"></div>
+  </div>
+
+  <div class="section">
+    <h2>Browser Console</h2>
+    <p>Live console output (from main app). Open DevTools (F12) for full console access.</p>
+    <div id="console" class="console"></div>
+  </div>
+
+  <div class="section">
+    <h2>Instructions</h2>
+    <div class="info-box">
+      <strong>Enable Debug Mode:</strong>
+      <div class="code">?debug=1 (in URL)</div>
+      <p>Or press the Toggle button above.</p>
+    </div>
+    <div class="info-box">
+      <strong>View Console Output:</strong>
+      <p>Press F12 to open DevTools, go to Console tab.</p>
+    </div>
+    <div class="info-box">
+      <strong>Check Performance:</strong>
+      <p>Press F12 > Performance tab, record a session, then analyze frame rate and memory usage.</p>
+    </div>
+    <div class="info-box">
+      <strong>Run Tests from Console:</strong>
+      <div class="code">await tests.runAll()</div>
+      <p>Use in browser console to run automated tests.</p>
+    </div>
+  </div>
+
+  <footer>
+    <p>Saluti 3D Debug Console | Three.js v0.155 + Rapier Physics</p>
+    <p>For best results, use Chrome/Firefox with DevTools (F12)</p>
+  </footer>
+
+  <script>
+    function toggleDebugMode() {
+      const current = localStorage.getItem('saluti3d-debug');
+      const newValue = current === '1' ? '0' : '1';
+      localStorage.setItem('saluti3d-debug', newValue);
+      updateDebugInfo();
+      alert('Debug mode ' + (newValue === '1' ? 'enabled' : 'disabled') + '. Refresh the app.');
+    }
+
+    function updateDebugInfo() {
+      const debugMode = localStorage.getItem('saluti3d-debug') === '1';
+      const infoDiv = document.getElementById('debug-info');
+      const browserInfo = navigator.userAgent.slice(0, 80);
+      const now = new Date().toLocaleString();
+
+      infoDiv.innerHTML = `
+        <table>
+          <tr>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+          <tr>
+            <td>Debug Mode</td>
+            <td class="${debugMode ? 'status-ok' : 'status-fail'}">${debugMode ? 'ENABLED' : 'DISABLED'}</td>
+          </tr>
+          <tr>
+            <td>Time</td>
+            <td>${now}</td>
+          </tr>
+          <tr>
+            <td>Browser</td>
+            <td>${browserInfo}</td>
+          </tr>
+          <tr>
+            <td>LocalStorage Debug Flag</td>
+            <td>${debugMode ? 'saluti3d-debug=1' : 'not set'}</td>
+          </tr>
+          <tr>
+            <td>WebGL</td>
+            <td class="status-ok">${(() => {
+              try {
+                const c = document.createElement('canvas');
+                return (c.getContext('webgl') || c.getContext('experimental-webgl')) ? 'Available' : 'Not found';
+              } catch {
+                return 'Error';
+              }
+            })()}</td>
+          </tr>
+        </table>
+      `;
+    }
+
+    async function runTests() {
+      const resultsDiv = document.getElementById('test-results');
+      resultsDiv.innerHTML = '<p style="color: #ffb74d;">Loading tests...</p>';
+
+      try {
+        // Dynamically import tests if available
+        const testScript = await fetch('./.automated-tests.js');
+        if (testScript.ok) {
+          const code = await testScript.text();
+          eval(code);
+          if (typeof tests !== 'undefined') {
+            await tests.runAll();
+            const results = tests.getResults();
+            const passRate = ((results.passed / (results.passed + results.failed)) * 100).toFixed(0);
+            resultsDiv.innerHTML = `
+              <div class="info-box">
+                <strong>Test Results:</strong>
+                <p>Passed: ${results.passed}</p>
+                <p>Failed: ${results.failed}</p>
+                <p>Pass Rate: ${passRate}%</p>
+              </div>
+            `;
+          } else {
+            resultsDiv.innerHTML = '<p style="color: #ff6b6b;">Test module not loaded</p>';
+          }
+        } else {
+          resultsDiv.innerHTML = '<p style="color: #ff6b6b;">Could not load automated tests</p>';
+        }
+      } catch (e) {
+        resultsDiv.innerHTML = `<p style="color: #ff6b6b;">Error: ${e.message}</p>`;
+      }
+    }
+
+    function clearConsole() {
+      document.getElementById('console').innerHTML = '';
+    }
+
+    // Initialize
+    updateDebugInfo();
+  </script>
+</body>
+</html>
