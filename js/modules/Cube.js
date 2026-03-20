@@ -13,6 +13,7 @@ export class Cube {
     });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
+    this._overridePosition = false; // true while user is dragging
   }
 
   reset() {
@@ -21,13 +22,28 @@ export class Cube {
   }
 
   update(t) {
+    // Rotation always follows animation timeline
     this.mesh.rotation.x = t * 0.9;
     this.mesh.rotation.y = t * 1.2;
     this.mesh.rotation.z = t * 0.6;
 
-    this.mesh.position.x = Math.cos(t * 0.55) * 0.95;
-    this.mesh.position.y = Math.sin(t * 0.95) * 0.45 + 0.5;
-    this.mesh.position.z = Math.sin(t * 0.8) * 1.05;
+    // Position follows animation only when not being dragged by the user
+    if (!this._overridePosition) {
+      this.mesh.position.x = Math.cos(t * 0.55) * 0.95;
+      this.mesh.position.y = Math.sin(t * 0.95) * 0.45 + 0.5;
+      this.mesh.position.z = Math.sin(t * 0.8) * 1.05;
+    }
+  }
+
+  /** Lock cube at a world position (called every frame during drag). */
+  setDragPosition(v3) {
+    this._overridePosition = true;
+    this.mesh.position.copy(v3);
+  }
+
+  /** Release drag override — animation resumes on next update(). */
+  releaseDrag() {
+    this._overridePosition = false;
   }
 
   getMesh() {

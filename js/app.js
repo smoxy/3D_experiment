@@ -123,6 +123,7 @@ try {
   const hueClock = new THREE.Clock();
 
   function resetCube() {
+    cube.releaseDrag();
     cube.reset();
     controls.target.set(0, 0.5, 0);
     controls.update();
@@ -143,18 +144,10 @@ try {
   function animate() {
     requestAnimationFrame(animate);
 
-    // Single getDelta() call per frame — prevents double-call bug where
-    // getElapsedTime() internally calls getDelta(), leaving dt ≈ 0 for particles.
     const dt = clock.getDelta();
-    // Accumulate elapsed only when not paused, so cube/camera freeze correctly.
     if (!paused) {
       elapsedTime += dt;
       cube.update(elapsedTime);
-
-      const ca = Math.sin(elapsedTime * 0.14) * 2.6;
-      const cb = Math.cos(elapsedTime * 0.11) * 2.2;
-      const cc = Math.sin(elapsedTime * 0.12) * 1.8 + 2.4;
-      camera.position.set(ca, cc, cb);
     }
 
     // Color cycle
@@ -165,14 +158,111 @@ try {
       cube.setEmissiveColor({ h: currentHue, s: 0.6, l: 0.12 });
     }
 
-    camera.lookAt(cube.getMesh().position);
-
-    // Pass dt=0 when paused so particles freeze instantly without needing
-    // to restart the clock (avoids a large dt spike on unpause).
     particles.update(paused ? 0 : dt);
 
     cameraControls.update();
     renderer.render(scene, camera);
+    updateStats();
+  }
+
+  // --- CUBE DRAG ---
+  // Raycaster projects mouse/touch onto a plane facing the camera,
+  // passing through the cube centre. This gives intuitive XY-of-screen drag.
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const dragPlane = new THREE.Plane();
+  const dragIntersect = new THREE.Vector3();
+  const dragOffset = new THREE.Vector3();
+  let cubeDragging = false;
+
+  function getClientXY(e) {
+    return e.touches ? [e.touches[0].clientX, e.touches[0].clientY] : [e.clientX, e.clientY];
+  }
+
+  function onPointerDown(e) {
+    const [cx, cy] = getClientXY(e);
+    mouse.x = (cx / window.innerWidth) * 2 - 1;
+    mouse.y = -(cy / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObject(cube.getMesh());
+    if (hits.length > 0) {
+      cubeDragging = true;
+      controls.enabled = false;
+      canvas.classList.add('dragging');
+      // Drag plane faces the camera, pinned to the cube centre
+      const normal = new THREE.Vector3();
+      camera.getWorldDirection(normal);
+      normal.negate();
+      dragPlane.setFromNormalAndCoplanarPoint(normal, cube.getMesh().position);
+      // Preserve offset so cube doesn't snap to the hit point
+      dragOffset.subVectors(cube.getMesh().position, hits[0].point);
+    }
+  }
+
+  function onPointerMove(e) {
+    if (!cubeDragging) return;
+    const [cx, cy] = getClientXY(e);
+    mouse.x = (cx / window.innerWidth) * 2 - 1;
+    mouse.y = -(cy / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    if (raycaster.ray.intersectPlane(dragPlane, dragIntersect)) {
+      const newPos = dragIntersect.clone().add(dragOffset);
+      newPos.y = Math.max(-0.44, newPos.y); // keep cube above floor
+      cube.setDragPosition(newPos);
+    }
+  }
+
+  function onPointerUp() {
+    if (cubeDragging) {
+      cubeDragging = false;
+      controls.enabled = true;
+      canvas.classList.remove('dragging');
+      cube.releaseDrag();
+    }
+  }
+
+  canvas.addEventListener('mousedown', onPointerDown);
+  canvas.addEventListener('mousemove', onPointerMove);
+  canvas.addEventListener('mouseup', onPointerUp);
+  canvas.addEventListener('mouseleave', onPointerUp);
+  canvas.addEventListener('touchstart', onPointerDown, { passive: true });
+  canvas.addEventListener('touchmove', onPointerMove, { passive: true });
+  canvas.addEventListener('touchend', onPointerUp);
+
+  // --- FASE 6: STATS MONITORING ---
+  const statsFpsEl    = document.querySelector('#statsFps');
+  const statsCallsEl  = document.querySelector('#statsCalls');
+  const statsTrisEl   = document.querySelector('#statsTris');
+  const statsMemEl    = document.querySelector('#statsMem');
+  const statePartsEl  = document.querySelector('#statsParts');
+  let statsFrameCount = 0;
+  let statsLastTime   = performance.now();
+  let statsCallsAccum = 0;
+  let statsTrisAccum  = 0;
+
+  function updateStats() {
+    statsCallsAccum += renderer.info.render.calls;
+    statsTrisAccum  += renderer.info.render.triangles;
+    statsFrameCount++;
+    if (statsFrameCount < 30) return;
+
+    const now = performance.now();
+    const fps     = Math.round((statsFrameCount * 1000) / (now - statsLastTime));
+    const avgCalls = Math.round(statsCallsAccum / statsFrameCount);
+    const avgTris  = Math.round(statsTrisAccum  / statsFrameCount);
+    statsLastTime   = now;
+    statsFrameCount = 0;
+    statsCallsAccum = 0;
+    statsTrisAccum  = 0;
+
+    if (statsFpsEl) {
+      statsFpsEl.textContent = `FPS: ${fps}`;
+      statsFpsEl.style.color = fps >= 50 ? '#51cf66' : fps >= 30 ? '#ffb74d' : '#ff6b6b';
+    }
+    if (statsCallsEl) statsCallsEl.textContent = `Draw: ${avgCalls}`;
+    if (statsTrisEl)  statsTrisEl.textContent  = `Tri: ${avgTris.toLocaleString()}`;
+    if (statsMemEl)   statsMemEl.textContent   = `Geo: ${renderer.info.memory.geometries} Tex: ${renderer.info.memory.textures}`;
+    if (statePartsEl) statePartsEl.textContent = `P: ${particles.visibleCount}`;
   }
 
   function setupEventHandlers() {
@@ -292,7 +382,7 @@ try {
   setupEventHandlers();
   animate();
 
-  debug('Pronto. FASE 4: Rapier.js integrato.');
+  debug('FASE 6: camera libera, drag cubo, stats overlay.');
 } catch (error) {
   console.error(error);
   debug('Errore inizializzazione: ' + (error.message || error));

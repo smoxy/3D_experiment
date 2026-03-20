@@ -51,9 +51,16 @@
 
         <button id="applyParticlesBtn" type="button">Applica parametri</button>
       </div>
-      <p class="hint">Scroll/muovi con il mouse o dito: orbita, zoom e pan.</p>
+      <p class="hint">Trascina il cubo per spostarlo. Orbita, zoom e pan sulla scena con mouse/tocco.</p>
     </section>
     <canvas id="scene" aria-label="Scena 3D" role="img"></canvas>
+    <div id="statsOverlay" class="stats-overlay" aria-hidden="true">
+      <div id="statsFps">FPS: --</div>
+      <div id="statsCalls">Draw: --</div>
+      <div id="statsTris">Tri: --</div>
+      <div id="statsMem">Geo: -- Tex: --</div>
+      <div id="statsParts">P: 0</div>
+    </div>
     <section id="debug" class="debug" aria-live="assertive"></section>
   </main>
 
