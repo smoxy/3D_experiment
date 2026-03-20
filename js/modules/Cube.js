@@ -13,13 +13,6 @@ export class Cube {
     });
     this.mesh = new THREE.Mesh(this.geometry, this.material);
     this.scene.add(this.mesh);
-
-    // Edges
-    const edges = new THREE.LineSegments(
-      new THREE.EdgesGeometry(this.geometry),
-      new THREE.LineBasicMaterial({ color: 0xffffff })
-    );
-    this.mesh.add(edges);
   }
 
   reset() {

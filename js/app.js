@@ -3,6 +3,7 @@ import { SceneSetup } from './modules/Scene.js';
 import { Cube } from './modules/Cube.js';
 import { ParticleSystem } from './modules/ParticleSystem.js';
 import { CameraControlsSetup } from './modules/CameraControls.js';
+import { RapierWorld } from './modules/physics/RapierWorld.js';
 
 const debugEl = document.querySelector('#debug');
 const canvas = document.querySelector('#scene');
@@ -27,6 +28,7 @@ function isWebGLAvailable() {
   }
 }
 
+async function main() {
 try {
   if (!canvas) throw new Error('Canvas #scene non trovato');
   if (!isWebGLAvailable()) {
@@ -47,7 +49,10 @@ try {
   const scene = sceneSetup.getScene();
   
   const cube = new Cube(scene);
-  const particles = new ParticleSystem(scene, cube);
+  const rapierWorld = new RapierWorld();
+  debug('Caricamento motore fisico...');
+  await rapierWorld.init(9.8);
+  const particles = new ParticleSystem(scene, cube, rapierWorld);
   
   // Camera
   const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
@@ -236,11 +241,13 @@ try {
   setupEventHandlers();
   animate();
 
-  debug('Pronto. FASE 2: architettura modulare + slider gravità.');
+  debug('Pronto. FASE 4: Rapier.js integrato.');
 } catch (error) {
   console.error(error);
   debug('Errore inizializzazione: ' + (error.message || error));
 }
+}
+main();
 
 window.onerror = function (msg, url, line, col, error) {
   const err = `${msg} (${url}:${line}:${col})`;
